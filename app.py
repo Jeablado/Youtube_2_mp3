@@ -5,14 +5,18 @@ from downloader import YouTubeDownloader
 class DownloadThread(QtCore.QThread):
     download_finished = QtCore.Signal(str)
 
-    def __init__(self, url, audio_only):
+    def __init__(self, url, audio_only, one_video):
         super().__init__()
         self.url = url
         self.audio_only = audio_only
+        self.one_video = one_video
 
     def run(self):
-        downloader = YouTubeDownloader(self.url)
-        result, message = downloader.download_stream(audio_only=self.audio_only)
+        downloader = YouTubeDownloader()
+        if self.one_video:
+            result, message = downloader.download_video(video_url=self.url, audio_only=self.audio_only)
+        else:
+            result, message = downloader.download_playlist(playlist_url=self.url, audio_only=self.audio_only)
         self.download_finished.emit(message)
 
 class App(QtWidgets.QWidget):
@@ -43,14 +47,19 @@ class App(QtWidgets.QWidget):
         self.le_URL = QtWidgets.QLineEdit()
         self.cbb_format = QtWidgets.QComboBox()
         self.cbb_format.addItems(["mp3", "mp4"])
+        self.cbb_video_playlist = QtWidgets.QComboBox()
+        self.cbb_video_playlist.addItems(["video", "playlist"])
         self.btn_download = QtWidgets.QPushButton("Download")
         third_row_layout.addWidget(self.le_URL)
         third_row_layout.addWidget(self.cbb_format)
+        third_row_layout.addWidget(self.cbb_video_playlist)
         third_row_layout.addWidget(self.btn_download)
+
 
     def setup_connections(self):
         self.le_URL.returnPressed.connect(self.download)
         self.btn_download.clicked.connect(self.download)
+
 
     def setup_css(self):
         self.setStyleSheet("""              
@@ -93,6 +102,7 @@ class App(QtWidgets.QWidget):
         }
         """)
 
+
     def download(self):
         url = self.le_URL.text()
         if url:
@@ -100,22 +110,19 @@ class App(QtWidgets.QWidget):
             self.lb_info2.setText("")
             QtWidgets.QApplication.processEvents()
 
-            audio_only = False
-            if self.cbb_format.currentText() == "mp3":
-                audio_only = True
-            
-            self.download_thread = DownloadThread(url, audio_only)
+            audio_only = self.cbb_format.currentText() == "mp3"
+            one_video = self.cbb_video_playlist.currentText() == "video"
+            self.download_thread = DownloadThread(url, audio_only, one_video)
             self.download_thread.download_finished.connect(self.handle_download_finished)
             self.download_thread.start()
 
         else:
             self.lb_info1.setText("") 
             self.lb_info2.setText("Please enter an URL") 
-            
+    
     def handle_download_finished(self, message):
         self.lb_info1.setText(message)
         self.lb_info2.setText("Please enter your YT URL below")
-    
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
