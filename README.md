@@ -11,7 +11,7 @@ To install and set up **Youtube 2 mp3**, follow these steps:
 1. Clone this repository to your local machine:
 
     ```
-    git clone <repository-url>
+    git clone <https://github.com/Jeablado/Youtube_2_mp3>
     ```
 
 2. Navigate to the project directory:
